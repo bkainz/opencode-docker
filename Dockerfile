@@ -90,6 +90,9 @@ RUN if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then \
 # Set proper ownership for everything
 RUN chown -R opencode-user:opencode-user /app /home/opencode-user
 
+# Install global npm packages as root before switching users
+RUN npm install -g @th0rgal/ralph-wiggum @upstash/context7-mcp
+
 # Switch to non-root user
 USER opencode-user
 
@@ -98,12 +101,6 @@ ENV HOME=/home/opencode-user
 
 # Install OpenCode CLI for opencode-user
 RUN curl -fsSL https://opencode.ai/install | bash
-
-# Install Ralph Wiggum (autonomous agentic loop tool)
-RUN npm install -g @th0rgal/ralph-wiggum
-
-# Install Context7 MCP Server (up-to-date docs for any library)
-RUN npm install -g @upstash/context7-mcp
 
 # Add opencode bin directory to PATH
 ENV PATH="/home/opencode-user/.opencode/bin:$PATH"

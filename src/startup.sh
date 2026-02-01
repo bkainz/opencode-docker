@@ -34,20 +34,22 @@ if [ -n "${OPENROUTER_API_KEY:-}" ]; then
     # Ensure config.json exists with correct settings
     CONFIG_FILE="$HOME/.config/opencode/config.json"
     if [ ! -f "$CONFIG_FILE" ]; then
-        echo "  Creating config.json with minimax and nightowl theme"
+        echo "  Creating config.json with minimax, nightowl theme, and auto-approved permissions"
         cat > "$CONFIG_FILE" << 'EOF'
 {
   "model": "minimax/minimax-m2.1",
-  "theme": "nightowl"
+  "theme": "nightowl",
+  "permission": "allow"
 }
 EOF
     else
-        # Update existing config to ensure model and theme are set
-        echo "  Updating config.json with minimax model and nightowl theme"
+        # Update existing config to ensure model, theme, and permissions are set
+        echo "  Updating config.json with minimax model, nightowl theme, and auto-approved permissions"
         cat > "$CONFIG_FILE" << 'EOF'
 {
   "model": "minimax/minimax-m2.1",
-  "theme": "nightowl"
+  "theme": "nightowl",
+  "permission": "allow"
 }
 EOF
     fi
@@ -108,10 +110,6 @@ if [ -n "${OPENCODE_MODEL:-}" ]; then
     echo "Explicitly setting model to: $OPENCODE_MODEL"
     OPENCODE_CMD="$OPENCODE_CMD --model $OPENCODE_MODEL"
 fi
-
-# Auto-approve all permissions (similar to ralph --allow-all)
-echo "Auto-approving tool permissions"
-OPENCODE_CMD="$OPENCODE_CMD --allow-all"
 
 # Run opencode with all arguments passed to the container
 exec $OPENCODE_CMD "$@"
