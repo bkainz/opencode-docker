@@ -1,88 +1,231 @@
-# Opencode Docker
+# OpenCode Docker
 
-This project provides a secure, isolated Docker environment designed for running **Opencode** agents. It features a fully-featured development environment accessible remotely via **OpenSSH** over a secure **Tailscale** VPN mesh network.
+Containerized drop-in replacement for OpenCode - run in an isolated Docker environment with complete workspace access. Simple one-command setup for local development.
 
-![Opencode Docker Demo](https://cdn.rogverse.fyi/WindowsTerminal_1BCHwo8nFM.gif)
+---
 
+## Prerequisites
 
-## 🚀 Features
+**Required:**
+- ✅ Docker installation
+- ✅ OpenRouter API key (or OpenCode API key)
 
-*   **Secure Isolation**: Runs in a self-contained container based on Ubuntu.
-*   **Remote Access**: Accessible securely from anywhere via Tailscale no ports opened on the public internet.
-*   **Persistent Configuration**: Your workspace and configurations (Neovim, Opencode) are persisted across restarts.
-*   **GPU Support**: Pre-configured for NVIDIA GPU acceleration.
-*   **Rich Tooling**: Comes pre-loaded with a modern suite of CLI tools and development runtimes.
+**Everything else is optional** - the container runs fine without any additional setup.
 
-## 🛠️ Getting Started
+---
 
-### Prerequisites
+## Quick Start
 
-*   [Docker](https://docs.docker.com/get-docker/) installed on your host machine.
-*   A [Tailscale](https://tailscale.com/) account and an auth key.
+```bash
+# 1. Clone and enter directory
+git clone https://github.com/bkainz/opencode-docker.git
+cd opencode-docker
 
-### Installation & Usage
+# 2. Setup environment
+cp sample.env .env
+nano .env  # Add your OPENROUTER_API_KEY
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd opencode-docker
-    ```
+# 3. Install
+./src/install.sh
 
-2.  **Configure Environment Variables:**
-    Create a `.env` file in the root directory (or set these variables in your shell) with your secrets:
+# 4. Run from any project
+cd ~/your-project
+opencode-docker
+```
 
-    ```bash
-    TAILSCALE_AUTHKEY=tskey-auth-xxxxx-xxxxxxxxx  # Your Tailscale Auth Key
-    USER_PASSWORD=secretpassword                  # Password for the 'ubuntu' user
-    ```
+**That's it!** OpenCode runs in an isolated Docker container with access to your project directory.
 
-3.  **Start the Container:**
-    Run the following command to bring up the environment:
+---
 
-    ```bash
-    docker-compose up -d
-    ```
+## Command Line Reference
 
-4.  **Connect via SSH:**
-    Once running, the machine will appear in your Tailscale network as `opencode`. You can SSH into it:
+### Basic Usage
+```bash
+opencode-docker                       # Start OpenCode in current directory
+opencode-docker --podman              # Use podman instead of docker
+opencode-docker --rebuild             # Force rebuild Docker image
+opencode-docker --rebuild --no-cache  # Rebuild without using cache
+opencode-docker --memory 8g           # Set container memory limit
+opencode-docker --gpus all            # Enable GPU access (requires nvidia-docker)
+```
 
-    ```bash
-    ssh ubuntu@opencode
-    ```
-    *(Or use the Tailscale IP address directly if DNS is not configured)*
+### Available Flags
 
-## 🧰 Included Tools
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--podman` | Use podman instead of docker | `opencode-docker --podman` |
+| `--rebuild` | Force rebuild of the Docker image | `opencode-docker --rebuild` |
+| `--no-cache` | When rebuilding, don't use Docker cache | `opencode-docker --rebuild --no-cache` |
+| `--memory` | Set container memory limit | `opencode-docker --memory 8g` |
+| `--gpus` | Enable GPU access | `opencode-docker --gpus all` |
 
-This environment is packed with tools to maximize productivity:
+### Environment Variable Defaults
 
-### Core & Shell
-*   **Shell**: `bash` with `starship` prompt.
-*   **Multiplexers**: `tmux`, `byobu`.
-*   **Editors**: `neovim` (NVIM), `vim`, `nano`.
-*   **File Managers**: `superfile`, `mc` (Midnight Commander).
-*   **Navigation**: `zoxide` (smarter cd), `gum`.
+Set defaults in your `.env` file:
+```bash
+DOCKER_MEMORY_LIMIT=8g          # Default memory limit
+DOCKER_GPU_ACCESS=all           # Default GPU access
+```
 
-### Development Runtimes (managed via `mise`)
-*   **Node.js**
-*   **Go**
-*   **Python** (also with `uv`)
-*   **Rust**
-*   **Opencode CLI**
+### Examples
+```bash
+# Standard usage
+cd ~/my-project
+opencode-docker
 
-### Utilities
-*   **Search**: `fzf`, `rg` (ripgrep), `fd` (fd-find).
-*   **Git**: `git`, `lazygit`, `gh` (GitHub CLI).
-*   **System**: `htop`, `iotop`, `ncdu`, `fastfetch`.
-*   **Archives**: `tar`, `zip`, `unzip`.
-*   **Network**: `curl`, `wget`, `nmap`, `iperf`, `dnsutils`, `ping`.
-*   **Modern Replacements**: `bat` (cat clone), `exa` (ls clone).
-*   **Security**: `age`, `gnupg`, `openssh-server`.
-*   **Build**: `build-essential`, `cmake`, `ninja-build`.
+# Use GPU for ML tasks
+opencode-docker --gpus all
 
-## 📂 Volume Mappings
+# Rebuild after updating .env file
+opencode-docker --rebuild
+```
 
-The following directories are mapped to the host to ensure data persistence:
+---
 
-*   `./workspace` -> `/home/ubuntu/workspace`: Main working directory.
-*   `./config/opencode` -> `/home/ubuntu/.config/opencode`: Opencode configuration.
-*   `./config/nvim` -> `/home/ubuntu/.config/nvim`: Neovim configuration.
+## Optional Configuration
+
+All configuration below is optional. The container works out-of-the-box without any of these settings.
+
+### Environment Variables (.env file)
+
+#### OpenRouter API Key (Recommended)
+Use OpenRouter for access to multiple AI models including MiniMax, Claude, GPT-4, and more:
+```bash
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+# Optional: Specify model (defaults to minimax/minimax-m2.1)
+OPENROUTER_MODEL=minimax/minimax-m2.1
+```
+
+Get your API key from [openrouter.ai](https://openrouter.ai)
+
+**Available Models:**
+- `minimax/minimax-m2.1` (default - cost-effective)
+- `anthropic/claude-3.5-sonnet`
+- `anthropic/claude-3-opus`
+- `openai/gpt-4-turbo`
+- `openai/gpt-4`
+- See full list at [openrouter.ai/models](https://openrouter.ai/models)
+
+#### Alternative: Direct OpenCode API Key
+```bash
+OPENCODE_API_KEY=your_opencode_api_key_here
+```
+
+Get your API key from [opencode.ai](https://opencode.ai)
+
+#### System Packages
+Additional apt packages beyond the Dockerfile defaults:
+```bash
+SYSTEM_PACKAGES="neovim tmux htop"
+```
+
+**Note:** Adding system packages requires rebuilding the image with `opencode-docker --rebuild`.
+
+### Git Configuration
+
+Git configuration (global username and email) is automatically loaded from your host system during Docker build. Commits appear as you.
+
+---
+
+## Features
+
+### Core Capabilities
+- ✅ Complete AI coding agent setup - OpenCode in isolated Docker container
+- ✅ Persistent conversation history and configuration
+- ✅ Simple one-command setup - Zero friction plug-and-play integration
+- ✅ GPU support for ML/AI tasks (with nvidia-docker)
+- ✅ Fully customizable - Modify files at `~/.opencode-docker` for custom behavior
+
+### Security
+- ✅ Runs in isolated container - no access to host system beyond project directory
+- ✅ User permissions matched to host UID/GID - files created with correct ownership
+- ✅ No SSH or network exposure - completely local setup
+
+---
+
+## Directory Structure
+
+After installation:
+```
+~/.opencode-docker/
+  └── config/          # Persistent OpenCode configuration
+
+Your Project/
+  ├── your files...
+  └── (OpenCode works here)
+```
+
+The container mounts:
+- **Current directory** → `/workspace` (read/write)
+- **`~/.opencode-docker/config`** → OpenCode config directory (read/write)
+
+---
+
+## GPU Support
+
+To use GPU acceleration:
+
+1. Install NVIDIA Docker runtime (one-time setup):
+```bash
+sudo ./src/install.sh  # Automatically installs GPU support if NVIDIA GPU detected
+```
+
+2. Run with GPU access:
+```bash
+opencode-docker --gpus all
+```
+
+Or set as default in `.env`:
+```bash
+DOCKER_GPU_ACCESS=all
+```
+
+---
+
+## Troubleshooting
+
+### Permission Issues
+The container automatically matches your host UID/GID. If you see permission errors:
+```bash
+# Rebuild with your current UID/GID
+opencode-docker --rebuild
+```
+
+### OpenCode Not Found
+If opencode command fails:
+```bash
+# Rebuild the image
+opencode-docker --rebuild --no-cache
+```
+
+### GPU Not Working
+1. Verify NVIDIA drivers: `nvidia-smi`
+2. Check Docker GPU support: `docker info | grep -i nvidia`
+3. Install GPU support: `sudo ./src/install.sh`
+
+---
+
+## Differences from Original Fork
+
+This fork simplifies the original [rpfilomeno/opencode-docker](https://github.com/rpfilomeno/opencode-docker) by:
+
+- ❌ Removed SSH server and Tailscale networking (local-only setup)
+- ❌ Removed complex tool installations (minimal base image)
+- ✅ Added simple shell script launcher (like [claude-docker](https://github.com/VishalJ99/claude-docker))
+- ✅ Simplified to single-command installation and usage
+- ✅ Focus on local development workflow
+
+---
+
+## Created By
+
+- **Repository**: https://github.com/bkainz/opencode-docker
+- **Original Fork**: https://github.com/rpfilomeno/opencode-docker
+- **Inspired By**: https://github.com/VishalJ99/claude-docker
+
+---
+
+## License
+
+This project is open source. See the [LICENSE](LICENSE) file for details.
+

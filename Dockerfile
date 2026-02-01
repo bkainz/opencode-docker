@@ -1,110 +1,105 @@
-FROM ubuntu:26.04
+# ABOUTME: Docker image for OpenCode with full permissions
+# ABOUTME: Provides autonomous OpenCode environment in isolated container
 
-# Set common environment variables
-ENV DEBIAN_FRONTEND=noninteractive
+FROM node:20.18.1-slim
 
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US.UTF-8
+# Install system dependencies and tools
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    python3 \
+    python3-pip \
+    build-essential \
+    sudo \
+    gettext-base \
+    # Additional useful tools
+    vim \
+    nano \
+    htop \
+    tmux \
+    bash \
+    fzf \
+    ripgrep \
+    fd-find \
+    bat \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Password for ssh
-ENV USER_PASSWORD=123456
+# Install additional system packages if specified
+ARG SYSTEM_PACKAGES=""
+RUN if [ -n "$SYSTEM_PACKAGES" ]; then \
+    echo "Installing additional system packages: $SYSTEM_PACKAGES" && \
+    apt-get update && \
+    apt-get install -y $SYSTEM_PACKAGES && \
+    rm -rf /var/lib/apt/lists/*; \
+else \
+    echo "No additional system packages specified"; \
+fi
 
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# Create a non-root user with matching host UID/GID
+ARG USER_UID=1000
+ARG USER_GID=1000
+RUN if getent group $USER_GID > /dev/null 2>&1; then \
+        GROUP_NAME=$(getent group $USER_GID | cut -d: -f1); \
+    else \
+        groupadd -g $USER_GID opencode-user && GROUP_NAME=opencode-user; \
+    fi && \
+    useradd -m -s /bin/bash -u $USER_UID -g $GROUP_NAME opencode-user && \
+    echo "opencode-user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+# Create app directory
+WORKDIR /app
 
-# Install core
-RUN apt-get update && apt-get -y upgrade \
-    && apt-get install -y openssh-server \
-    # Utils
-    && apt-get install -y mc htop iotop ncdu tar zip nano vim bash sudo sed fzf wget ca-certificates curl unzip gnupg fzf tmux build-essential git ninja-build gettext cmake lazygit fd-find ripgrep tree-sitter-cli neovim gh age byobu fastfetch \
-    # Net utils
-    && apt-get install -y iputils-ping traceroute telnet dnsutils iperf nmap
+# Install OpenCode CLI globally
+RUN curl -fsSL https://opencode.ai/install | bash
 
-# Install Extras
-RUN mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://repo.charm.sh/apt/gpg.key | gpg --dearmor -o /etc/apt/keyrings/charm.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | tee /etc/apt/sources.list.d/charm.list \
-    && sudo apt update && sudo apt install -y gum eza bat
+# Make sure opencode is in PATH
+ENV PATH="/root/.local/bin:${PATH}"
 
-# Deleting keys
-RUN rm -rf /etc/ssh/ssh_host_dsa* /etc/ssh/ssh_host_ecdsa* /etc/ssh/ssh_host_ed25519* /etc/ssh/ssh_host_rsa*
+# Ensure npm global bin is in PATH
+ENV PATH="/usr/local/bin:${PATH}"
 
-# Config SSH
-RUN sed -ri "s|^#PermitRootLogin|PermitRootLogin|" /etc/ssh/sshd_config \
-    && sed -i "s|PermitRootLogin without-password|PermitRootLogin yes|" /etc/ssh/sshd_config \
-    && sed -i "s|PermitRootLogin prohibit-password|PermitRootLogin yes|" /etc/ssh/sshd_config \
-    && sed -ri "s|^#?PermitRootLogin\s+.*|PermitRootLogin no|" /etc/ssh/sshd_config \
-    && sed -ri "s|^#PasswordAuthentication|PasswordAuthentication|" /etc/ssh/sshd_config \
-    && sed -ri "s|^PasswordAuthentication no|PasswordAuthentication yes|" /etc/ssh/sshd_config \
-    && sed -ri "s|UsePAM yes|#UsePAM yes|g" /etc/ssh/sshd_config
+# Create directories for configuration
+RUN mkdir -p /app/.opencode /home/opencode-user/.config/opencode
 
-# Cleaning
-RUN apt-get clean autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/{apt,dpkg,cache,log}/ \
-    && rm -rf /var/lib/apt/lists/*.lz4 \
-    && rm -rf /var/log/* \
-    && rm -rf /tmp/* \
-    && rm -rf /var/tmp/* \
-    #    && rm -rf /usr/share/doc/ \
-    #    && rm -rf /usr/share/man/ \
-    && rm -rf $HOME/.cache
+# Copy startup script
+COPY src/startup.sh /app/
+RUN chmod +x /app/startup.sh
 
+# Copy .env file during build to bake credentials into the image
+COPY .env /app/.env
 
-# Install Superfile
-RUN bash -c "$(curl -sLo- https://superfile.dev/install.sh)"
+# Copy OpenCode authentication files from host if they exist
+# Note: Build will create empty file if doesn't exist
+RUN touch /home/opencode-user/.opencode.json
 
-# Install Starship with yes
-RUN curl -sS https://starship.rs/install.sh | sh -s -- --yes
+# Configure git user during build using host git config passed as build args
+ARG GIT_USER_NAME=""
+ARG GIT_USER_EMAIL=""
+RUN if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then \
+        echo "Configuring git user from host: $GIT_USER_NAME <$GIT_USER_EMAIL>" && \
+        git config --global user.name "$GIT_USER_NAME" && \
+        git config --global user.email "$GIT_USER_EMAIL" && \
+        echo "Git configuration complete"; \
+    else \
+        echo "Warning: No git user configured on host system"; \
+    fi
 
-# Install UV
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# Set proper ownership for everything
+RUN chown -R opencode-user:opencode-user /app /home/opencode-user
 
-RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+# Switch to non-root user
+USER opencode-user
 
-#Install Zoxide
-RUN curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh -s - --bin-dir /usr/local/bin/
+# Set HOME immediately after switching user
+ENV HOME=/home/opencode-user
 
+# Set working directory to mounted volume
+WORKDIR /workspace
 
-# Create a non-root user
-RUN echo "ubuntu ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/ubuntu \
-    && chmod 0440 /etc/sudoers.d/ubuntu
+# Environment variables will be passed from host
+ENV NODE_ENV=production
 
-#RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -G sudo ubuntu
-RUN echo 'ubuntu:ubuntu' | chpasswd
-
-#Create the home structure
-COPY deploy/home-scripts /home/ubuntu
-RUN chown -R ubuntu:ubuntu /home/ubuntu
-
-USER ubuntu
-WORKDIR /home/ubuntu
-RUN source .bashrc
-
-# Prepare SSH configuration
-RUN mkdir -p /home/ubuntu/.ssh \
-    && touch /home/ubuntu/.ssh/known_hosts
-
-# Preload GitHub host keys (non-interactive Git usage)
-RUN ssh-keyscan -T 5 github.com 2>/dev/null >> /home/ubuntu/.ssh/known_hosts || true
-
-#RUN git clone https://github.com/LazyVim/starter /home/ubuntu/.config/nvim \
-#    && rm -rf /home/ubuntu/.config/nvim/.git
-
-RUN mise use -g node
-RUN mise use -g go 
-RUN mise use -g python
-RUN mise use -g rust
-RUN mise use -g opencode
-
-RUN /home/ubuntu/.cargo/bin/cargo install --locked --git https://github.com/asciinema/asciinema
-RUN mkdir -p /home/ubuntu/workspace
-
-USER root
-
-COPY deploy/entrypoint /
-RUN chmod +x /entrypoint.sh
-
-EXPOSE 22/tcp
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/usr/sbin/sshd", "-D"]
+# Start OpenCode
+ENTRYPOINT ["/app/startup.sh"]

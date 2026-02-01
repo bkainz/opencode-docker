@@ -1,21 +1,14 @@
 name: opencode-docker
-services:
-  ts-sidecar:
-    image: tailscale/tailscale:latest
-    hostname: opencode
-    environment:
-      - TS_AUTHKEY=${TAILSCALE_AUTHKEY} #Generate in Tailscale Admin Console
-      - TS_STATE_DIR=/var/lib/tailscale
-    volumes:
-      - tailscale-data:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-      - sys_module
-    restart: unless-stopped
 
+services:
   opencode:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - USER_UID=${USER_UID:-1000}
+        - USER_GID=${USER_GID:-1000}
+        - SYSTEM_PACKAGES=${SYSTEM_PACKAGES:-}
     container_name: opencode
     deploy:
       resources:
@@ -26,23 +19,19 @@ services:
               capabilities:
                 - gpu
     restart: unless-stopped
-    network_mode: service:ts-sidecar
     environment:
-      - TZ=Asia/Manila
-      - USER_PASSWORD=${USER_PASSWORD}
+      - TZ=${TZ:-UTC}
+      - HOME=/home/opencode-user
+      - OPENCODE_API_KEY=${OPENCODE_API_KEY}
     volumes:
-      - ./workspace:/home/ubuntu/workspace
-      - ./config/opencode:/home/ubuntu/.config/opencode
-      - ./config/nvim:/home/ubuntu/.config/nvim
-
+      - ./workspace:/workspace
+      - ./config/opencode:/home/opencode-user/.config/opencode
+      - ./config/nvim:/home/opencode-user/.config/nvim
+    stdin_open: true
+    tty: true
     logging:
       options:
         max-size: "10m"
         max-file: "3"
-    depends_on:
-      - ts-sidecar
-
-volumes:
-  tailscale-data:
 
 
