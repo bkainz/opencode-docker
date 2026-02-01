@@ -37,9 +37,26 @@ if [ -n "${OPENROUTER_API_KEY:-}" ]; then
         echo "  Creating config.json with minimax, nightowl theme, and auto-approved permissions"
         cat > "$CONFIG_FILE" << 'EOF'
 {
+  "$schema": "https://opencode.ai/config.json",
   "model": "minimax/minimax-m2.1",
   "theme": "nightowl",
-  "permission": "allow"
+  "permission": {
+    "*": "allow",
+    "bash": {
+      "*": "allow",
+      "sudo *": "allow",
+      "apt *": "allow",
+      "npm install -g *": "allow",
+      "pip install *": "allow"
+    },
+    "edit": "allow",
+    "read": "allow",
+    "external_directory": {
+      "/home/opencode-user/.config/**": "allow",
+      "/home/opencode-user/.local/**": "allow",
+      "/usr/local/**": "allow"
+    }
+  }
 }
 EOF
     else
@@ -47,9 +64,26 @@ EOF
         echo "  Updating config.json with minimax model, nightowl theme, and auto-approved permissions"
         cat > "$CONFIG_FILE" << 'EOF'
 {
+  "$schema": "https://opencode.ai/config.json",
   "model": "minimax/minimax-m2.1",
   "theme": "nightowl",
-  "permission": "allow"
+  "permission": {
+    "*": "allow",
+    "bash": {
+      "*": "allow",
+      "sudo *": "allow",
+      "apt *": "allow",
+      "npm install -g *": "allow",
+      "pip install *": "allow"
+    },
+    "edit": "allow",
+    "read": "allow",
+    "external_directory": {
+      "/home/opencode-user/.config/**": "allow",
+      "/home/opencode-user/.local/**": "allow",
+      "/usr/local/**": "allow"
+    }
+  }
 }
 EOF
     fi
