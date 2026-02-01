@@ -93,6 +93,25 @@ fi
 if [ -n "${CONTEXT7_API_KEY:-}" ]; then
     echo "✓ Context7 API key found - configuring MCP server"
     export CONTEXT7_API_KEY="$CONTEXT7_API_KEY"
+    
+    # Add Context7 to OpenCode's MCP server list
+    MCP_CONFIG="$HOME/.config/opencode/mcp.json"
+    if [ ! -f "$MCP_CONFIG" ]; then
+        echo "  Creating MCP configuration for Context7"
+        cat > "$MCP_CONFIG" << EOF
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+      }
+    }
+  }
+}
+EOF
+    fi
 fi
 
 # Check for existing authentication
