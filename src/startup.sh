@@ -34,9 +34,26 @@ if [ -n "${OPENROUTER_API_KEY:-}" ]; then
     # Ensure config.json exists with correct settings
     CONFIG_FILE="$HOME/.config/opencode/config.json"
     echo "  Creating config.json with minimax, nightowl theme, and permissions"
-    cat > "$CONFIG_FILE" << 'EOF'
+    
+    # Build MCP configuration if Context7 API key is provided
+    MCP_CONFIG=""
+    if [ -n "${CONTEXT7_API_KEY:-}" ]; then
+        echo "  ✓ Context7 API key found - configuring remote MCP server"
+        MCP_CONFIG=',
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "'$CONTEXT7_API_KEY'"
+      }
+    }
+  }'
+    fi
+    
+    cat > "$CONFIG_FILE" << EOF
 {
-  "$schema": "https://opencode.ai/config.json",
+  "\$schema": "https://opencode.ai/config.json",
   "model": "minimax/minimax-m2.1",
   "theme": "nightowl",
   "permission": {
@@ -55,15 +72,9 @@ if [ -n "${OPENROUTER_API_KEY:-}" ]; then
       "/home/opencode-user/.local/**": "allow",
       "/usr/local/**": "allow"
     }
-  }
+  }$MCP_CONFIG
 }
 EOF
-fi
-
-# Configure Context7 MCP if API key is provided
-if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-    echo "✓ Context7 API key found"
-    export CONTEXT7_API_KEY="$CONTEXT7_API_KEY"
 fi
 
 # Check for existing authentication

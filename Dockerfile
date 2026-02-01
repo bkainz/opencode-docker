@@ -91,7 +91,8 @@ RUN if [ -n "$GIT_USER_NAME" ] && [ -n "$GIT_USER_EMAIL" ]; then \
 RUN chown -R opencode-user:opencode-user /app /home/opencode-user
 
 # Install global npm packages as root before switching users
-RUN npm install -g @th0rgal/ralph-wiggum @upstash/context7-mcp
+# Note: Context7 is configured as remote MCP server, not local npm package
+RUN npm install -g @th0rgal/ralph-wiggum
 
 # Switch to non-root user
 USER opencode-user
