@@ -51,7 +51,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="$PROJECT_ROOT/.env"
 if [ -f "$ENV_FILE" ]; then
     echo "✓ Found .env file with configuration"
-    # Source .env to get configuration variables
+    # Source .env to get configuration variables (including OPENCODE_CONFIG_DIR)
     set -a
     source "$ENV_FILE" 2>/dev/null || true
     set +a
@@ -59,6 +59,9 @@ else
     echo "⚠️  No .env file found at $ENV_FILE"
     echo "   Create one with your OpenCode tokens and configuration"
 fi
+
+# Set default config directory if not already set
+OPENCODE_CONFIG_DIR="${OPENCODE_CONFIG_DIR:-$HOME/.opencode-docker/config}"
 
 # Use environment variables as defaults if command line args not provided
 if [ -z "${MEMORY_LIMIT:-}" ] && [ -n "${DOCKER_MEMORY_LIMIT:-}" ]; then
@@ -111,7 +114,8 @@ if [ "$NEED_REBUILD" = true ]; then
 fi
 
 # Ensure directories exist
-mkdir -p "$HOME/.opencode-docker/config"
+OPENCODE_CONFIG_DIR="${OPENCODE_CONFIG_DIR:-$HOME/.opencode-docker/config}"
+mkdir -p "$OPENCODE_CONFIG_DIR"
 
 # Show information
 echo ""
@@ -119,7 +123,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🚀 OpenCode Docker"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📁 Project directory: $CURRENT_DIR"
-echo "📁 OpenCode config directory: ~/.opencode-docker/config/"
+echo "📁 OpenCode config directory: $OPENCODE_CONFIG_DIR"
 echo "   This directory contains OpenCode's settings and persists across sessions"
 echo ""
 
@@ -153,7 +157,8 @@ echo ""
 "$DOCKER" run -it --rm \
     $DOCKER_OPTS \
     -v "$CURRENT_DIR:/workspace" \
-    -v "$HOME/.opencode-docker/config:/home/opencode-user/.config/opencode:rw" \
+    -v "$OPENCODE_CONFIG_DIR:/home/opencode-user/.config/opencode:rw" \
+    -v "$OPENCODE_CONFIG_DIR/local:/home/opencode-user/.local:rw" \
     $MOUNT_ARGS \
     $ENV_ARGS \
     --workdir /workspace \

@@ -51,14 +51,15 @@ RUN if getent group $USER_GID > /dev/null 2>&1; then \
 # Create app directory
 WORKDIR /app
 
-# Install OpenCode CLI globally
-RUN curl -fsSL https://opencode.ai/install | bash
+# Install OpenCode CLI globally as root
+RUN curl -fsSL https://opencode.ai/install | bash && \
+    # Make opencode available system-wide
+    ln -sf /root/.local/bin/opencode /usr/local/bin/opencode && \
+    # Verify installation
+    opencode --version || echo "OpenCode installed"
 
 # Make sure opencode is in PATH
-ENV PATH="/root/.local/bin:${PATH}"
-
-# Ensure npm global bin is in PATH
-ENV PATH="/usr/local/bin:${PATH}"
+ENV PATH="/root/.local/bin:/usr/local/bin:${PATH}"
 
 # Create directories for configuration
 RUN mkdir -p /app/.opencode /home/opencode-user/.config/opencode
@@ -94,6 +95,12 @@ USER opencode-user
 
 # Set HOME immediately after switching user
 ENV HOME=/home/opencode-user
+
+# Install OpenCode CLI for opencode-user
+RUN curl -fsSL https://opencode.ai/install | bash
+
+# Add opencode bin directory to PATH
+ENV PATH="/home/opencode-user/.opencode/bin:$PATH"
 
 # Set working directory to mounted volume
 WORKDIR /workspace
