@@ -33,46 +33,8 @@ if [ -n "${OPENROUTER_API_KEY:-}" ]; then
     
     # Ensure config.json exists with correct settings
     CONFIG_FILE="$HOME/.config/opencode/config.json"
-    
-    # Build the config with MCP servers if Context7 API key is available
-    if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-        echo "  Creating config.json with minimax, nightowl theme, permissions, and Context7 MCP"
-        cat > "$CONFIG_FILE" << EOF
-{
-  "\$schema": "https://opencode.ai/config.json",
-  "model": "minimax/minimax-m2.1",
-  "theme": "nightowl",
-  "permission": {
-    "*": "allow",
-    "bash": {
-      "*": "allow",
-      "sudo *": "allow",
-      "apt *": "allow",
-      "npm install -g *": "allow",
-      "pip install *": "allow"
-    },
-    "edit": "allow",
-    "read": "allow",
-    "external_directory": {
-      "/home/opencode-user/.config/**": "allow",
-      "/home/opencode-user/.local/**": "allow",
-      "/usr/local/**": "allow"
-    }
-  },
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"],
-      "env": {
-        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
-      }
-    }
-  }
-}
-EOF
-    else
-        echo "  Creating config.json with minimax, nightowl theme, and permissions"
-        cat > "$CONFIG_FILE" << 'EOF'
+    echo "  Creating config.json with minimax, nightowl theme, and permissions"
+    cat > "$CONFIG_FILE" << 'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "minimax/minimax-m2.1",
@@ -96,12 +58,11 @@ EOF
   }
 }
 EOF
-    fi
 fi
 
 # Configure Context7 MCP if API key is provided
 if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-    echo "✓ Context7 MCP server configured in config.json"
+    echo "✓ Context7 API key found"
     export CONTEXT7_API_KEY="$CONTEXT7_API_KEY"
 fi
 
