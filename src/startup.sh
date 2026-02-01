@@ -33,11 +33,13 @@ if [ -n "${OPENROUTER_API_KEY:-}" ]; then
     
     # Ensure config.json exists with correct settings
     CONFIG_FILE="$HOME/.config/opencode/config.json"
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "  Creating config.json with minimax, nightowl theme, and auto-approved permissions"
-        cat > "$CONFIG_FILE" << 'EOF'
+    
+    # Build the config with MCP servers if Context7 API key is available
+    if [ -n "${CONTEXT7_API_KEY:-}" ]; then
+        echo "  Creating config.json with minimax, nightowl theme, permissions, and Context7 MCP"
+        cat > "$CONFIG_FILE" << EOF
 {
-  "$schema": "https://opencode.ai/config.json",
+  "\$schema": "https://opencode.ai/config.json",
   "model": "minimax/minimax-m2.1",
   "theme": "nightowl",
   "permission": {
@@ -56,12 +58,20 @@ if [ -n "${OPENROUTER_API_KEY:-}" ]; then
       "/home/opencode-user/.local/**": "allow",
       "/usr/local/**": "allow"
     }
+  },
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+      }
+    }
   }
 }
 EOF
     else
-        # Update existing config to ensure model, theme, and permissions are set
-        echo "  Updating config.json with minimax model, nightowl theme, and auto-approved permissions"
+        echo "  Creating config.json with minimax, nightowl theme, and permissions"
         cat > "$CONFIG_FILE" << 'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
@@ -91,27 +101,8 @@ fi
 
 # Configure Context7 MCP if API key is provided
 if [ -n "${CONTEXT7_API_KEY:-}" ]; then
-    echo "✓ Context7 API key found - configuring MCP server"
+    echo "✓ Context7 MCP server configured in config.json"
     export CONTEXT7_API_KEY="$CONTEXT7_API_KEY"
-    
-    # Add Context7 to OpenCode's MCP server list
-    MCP_CONFIG="$HOME/.config/opencode/mcp.json"
-    if [ ! -f "$MCP_CONFIG" ]; then
-        echo "  Creating MCP configuration for Context7"
-        cat > "$MCP_CONFIG" << EOF
-{
-  "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"],
-      "env": {
-        "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
-      }
-    }
-  }
-}
-EOF
-    fi
 fi
 
 # Check for existing authentication
