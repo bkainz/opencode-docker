@@ -151,7 +151,29 @@ Git configuration (global username and email) is automatically loaded from your 
 ---
 
 ## Advanced Features
+### Context7 MCP - Up-to-date Library Documentation
 
+Context7 automatically fetches the latest documentation for any library you're using. Just add `use context7` to your prompts:
+
+```
+# Inside OpenCode
+Create a Next.js middleware that checks for JWT in cookies. use context7
+```
+
+Context7 will automatically pull the latest Next.js docs and provide accurate, version-specific code examples.
+
+**Setup:**
+1. Get a free API key from [context7.com/dashboard](https://context7.com/dashboard)
+2. Add to your `.env` file:
+   ```bash
+   CONTEXT7_API_KEY=your_api_key_here
+   ```
+3. Rebuild: `opencode-docker --rebuild`
+
+**Tips:**
+- Add a rule to auto-invoke Context7: "Always use Context7 MCP when I need library/API documentation"
+- Specify versions: `use context7 with Next.js 14`
+- Use library IDs: `use library /supabase/supabase for API docs`
 ### Session Management
 
 OpenCode persists your conversation history across container restarts:

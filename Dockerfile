@@ -102,6 +102,9 @@ RUN curl -fsSL https://opencode.ai/install | bash
 # Install Ralph Wiggum (autonomous agentic loop tool)
 RUN npm install -g @th0rgal/ralph-wiggum
 
+# Install Context7 MCP Server (up-to-date docs for any library)
+RUN npm install -g @upstash/context7-mcp
+
 # Add opencode bin directory to PATH
 ENV PATH="/home/opencode-user/.opencode/bin:$PATH"
 

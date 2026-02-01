@@ -53,6 +53,12 @@ EOF
     fi
 fi
 
+# Configure Context7 MCP if API key is provided
+if [ -n "${CONTEXT7_API_KEY:-}" ]; then
+    echo "✓ Context7 API key found - configuring MCP server"
+    export CONTEXT7_API_KEY="$CONTEXT7_API_KEY"
+fi
+
 # Check for existing authentication
 if [ -f "$HOME/.config/opencode/config.json" ] || [ -f "$HOME/.opencode.json" ]; then
     echo "Found existing OpenCode authentication"
