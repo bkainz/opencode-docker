@@ -131,15 +131,60 @@ Git configuration (global username and email) is automatically loaded from your 
 
 ### Core Capabilities
 - ✅ Complete AI coding agent setup - OpenCode in isolated Docker container
-- ✅ Persistent conversation history and configuration
+- ✅ Persistent conversation history and sessions - Resume previous work with `/session`
+- ✅ Auto-approved permissions - No interruptions, fully autonomous operation
 - ✅ Simple one-command setup - Zero friction plug-and-play integration
 - ✅ GPU support for ML/AI tasks (with nvidia-docker)
+- ✅ Ralph Wiggum autonomous loop included - Self-correcting agentic workflows
 - ✅ Fully customizable - Modify files at `~/.opencode-docker` for custom behavior
+
+### Model Configuration
+- ✅ Default: MiniMax M2.1 via OpenRouter (cost-effective, powerful)
+- ✅ Theme: Night Owl (customizable in config)
+- ✅ Model persists across sessions
 
 ### Security
 - ✅ Runs in isolated container - no access to host system beyond project directory
 - ✅ User permissions matched to host UID/GID - files created with correct ownership
 - ✅ No SSH or network exposure - completely local setup
+
+---
+
+## Advanced Features
+
+### Session Management
+
+OpenCode persists your conversation history across container restarts:
+
+```bash
+# Start OpenCode
+opencode-docker
+
+# Inside OpenCode:
+/session          # List all previous sessions
+# Select a session to resume where you left off
+```
+
+Sessions are stored in `~/.opencode-docker/config/local/share/opencode/storage/`
+
+### Ralph Wiggum Autonomous Loop
+
+The container includes [Ralph Wiggum](https://github.com/Th0rgal/open-ralph-wiggum) for autonomous agentic workflows:
+
+```bash
+# Enter the container
+docker exec -it opencode-docker-yourproject-$$ bash
+
+# Run autonomous loop until task complete
+ralph "Build a REST API with CRUD operations and tests. \
+  Run tests after changes. Output <promise>COMPLETE</promise> when all tests pass." \
+  --max-iterations 20
+
+# Use Tasks Mode for complex projects
+ralph "Build a full-stack web application" --tasks --max-iterations 50
+```
+
+Ralph automatically retries tasks, seeing previous work and self-correcting until completion.
 
 ---
 

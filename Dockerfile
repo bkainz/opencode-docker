@@ -99,6 +99,9 @@ ENV HOME=/home/opencode-user
 # Install OpenCode CLI for opencode-user
 RUN curl -fsSL https://opencode.ai/install | bash
 
+# Install Ralph Wiggum (autonomous agentic loop tool)
+RUN npm install -g @th0rgal/ralph-wiggum
+
 # Add opencode bin directory to PATH
 ENV PATH="/home/opencode-user/.opencode/bin:$PATH"
 

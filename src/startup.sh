@@ -103,5 +103,9 @@ if [ -n "${OPENCODE_MODEL:-}" ]; then
     OPENCODE_CMD="$OPENCODE_CMD --model $OPENCODE_MODEL"
 fi
 
+# Auto-approve all permissions (similar to ralph --allow-all)
+echo "Auto-approving tool permissions"
+OPENCODE_CMD="$OPENCODE_CMD --allow-all"
+
 # Run opencode with all arguments passed to the container
 exec $OPENCODE_CMD "$@"
